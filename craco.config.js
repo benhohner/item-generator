@@ -1,9 +1,8 @@
-const { POSTCSS_MODES } = require("@craco/craco");
+/* eslint-disable */
+const postcss = require('./postcss.config');
 
 module.exports = {
-    style: {
-        postcss: {
-            mode: POSTCSS_MODES.file,
-        },
-    },
+  style: {
+    postcss
+  }
 };
