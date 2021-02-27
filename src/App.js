@@ -23,61 +23,55 @@ extend("$increment", (value, original) => original + value);
 
 // need to purchase/find raw materials
 
-function init(initialCount) {
-    return { count: initialCount };
-}
-function reducer(state, action) {
-    switch (action.type) {
-        case "increment":
-            return { count: state.count + 1 };
-        case "decrement":
-            return { count: state.count - 1 };
-        case "reset":
-            return init(action.payload);
-        default:
-            throw new Error();
-    }
-}
+const GLOBAL = {
+    WAREHOUSE: {
+        SPACE: {
+            MAX: 200,
+            MIN: 0,
+        },
+    },
+    PLAYER: {
+        TOOLING: {
+            CAPACITY: {
+                MAX: 5,
+                MIN: 0,
+            },
+        },
+    },
+    START: {
+        WAREHOUSE: {
+            ENERGY: 200,
+            IRON: 12,
+            get SPACE() {
+                delete this.SPACE;
+                this.SPACE = this.ENERGY - this.IRON;
+                return this.SPACE;
+            },
+        },
+    },
+};
 
-function Counter({ initialCount }) {
-    const [state, dispatch] = useReducer(reducer, initialCount, init);
-    return (
-        <>
-            Count: {state.count}
-            <button
-                type="button"
-                onClick={() =>
-                    dispatch({ type: "reset", payload: initialCount })
-                }
-            >
-                {" "}
-                Reset
-            </button>
-            <button
-                type="button"
-                onClick={() => dispatch({ type: "decrement" })}
-            >
-                -
-            </button>
-            <button
-                type="button"
-                onClick={() => dispatch({ type: "increment" })}
-            >
-                +
-            </button>
-        </>
-    );
-}
+const MATERIALS_VALUE = () => Math.floor(Math.random() * 12 + 1);
 
 function initGameState() {
     return {
-        playerName: "user",
+        actions: {
+            tooling: [{ action: "unequip", size: "primary", text: "⚔" }],
+            materials: [
+                { action: "sell", size: "primary", text: "Sell" },
+                { action: "equip", size: "secondary", text: "⚔" },
+            ],
+        },
+        player: {
+            playerName: "user",
+            tooling: [],
+        },
         messages: [],
         warehouse: {
-            space: 188,
+            space: GLOBAL.START.WAREHOUSE.SPACE,
             materials: {
-                iron: 12,
-                energy: 200,
+                iron: GLOBAL.START.WAREHOUSE.IRON,
+                energy: GLOBAL.START.WAREHOUSE.ENERGY,
                 crafted: [],
             },
         },
@@ -124,9 +118,7 @@ function gameReducer(state, action) {
                                       {
                                           id: nanoid(),
                                           name: `Sword ${nanoid(4)}`,
-                                          value: Math.floor(
-                                              Math.random() * 12 + 1
-                                          ),
+                                          value: MATERIALS_VALUE(),
                                       },
                                   ],
                               },
@@ -213,6 +205,89 @@ function gameReducer(state, action) {
                 },
             });
         }
+        case "equip": {
+            const [foundItem] = state.warehouse.materials.crafted.filter(
+                (item) => item.id === action.payload.id
+            );
+
+            if (
+                foundItem &&
+                state.player.tooling.length < GLOBAL.PLAYER.TOOLING.CAPACITY.MAX
+            ) {
+                return update(state, {
+                    messages: {
+                        $unshift: [
+                            buildMessageObject("success", `Equipped item`),
+                        ],
+                    },
+                    player: {
+                        tooling: { $push: [foundItem] },
+                    },
+                    warehouse: {
+                        space: { $increment: 1 },
+                        materials: {
+                            crafted: {
+                                $apply: (items) =>
+                                    items.filter(
+                                        (item) => item.id !== foundItem.id
+                                    ),
+                            },
+                        },
+                    },
+                });
+            }
+            return update(state, {
+                messages: {
+                    $unshift: [
+                        buildMessageObject(
+                            "error",
+                            `Too many items equipped or item not found`
+                        ),
+                    ],
+                },
+            });
+        }
+        case "unequip": {
+            const [foundItem] = state.player.tooling.filter(
+                (item) => item.id === action.payload.id
+            );
+
+            if (foundItem && state.warehouse.space > 0) {
+                return update(state, {
+                    messages: {
+                        $unshift: [
+                            buildMessageObject("success", `Unequipped item`),
+                        ],
+                    },
+                    player: {
+                        tooling: {
+                            $apply: (items) =>
+                                items.filter(
+                                    (item) => item.id !== foundItem.id
+                                ),
+                        },
+                    },
+                    warehouse: {
+                        space: { $increment: -1 },
+                        materials: {
+                            crafted: {
+                                $push: [foundItem],
+                            },
+                        },
+                    },
+                });
+            }
+            return update(state, {
+                messages: {
+                    $unshift: [
+                        buildMessageObject(
+                            "error",
+                            `Too many items equipped or item not found`
+                        ),
+                    ],
+                },
+            });
+        }
         case "cueMessage":
             return update(state, {
                 messages: {
@@ -261,30 +336,48 @@ function App() {
         // };
     }, [state.messages]);
 
-    const renderItems = () => (
-        <ul className="grid grid-cols-3 gap-4">
-            {state.warehouse.materials.crafted.map((item) => (
+    const renderItems = (items, itemActions) => (
+        <ul className="grid grid-flow-row-dense grid-cols-3 gap-4">
+            {items.map((item) => (
                 <li key={item.id} className="text-lg shadow p-2">
                     <div className="flex flex-row justify-between">
                         <div className="text-medium">{item.name}</div>
                         <div className="font-bold">${item.value}</div>
                     </div>
-                    <button
-                        type="button"
-                        className="border-2 border-purple-500 hover:border-gray-500 bg-transparent text-purple-700 hover:text-gray-700 py-1 w-full font-semibold rounded-md"
-                        onClick={() =>
-                            dispatch({ type: "sell", payload: { id: item.id } })
-                        }
-                    >
-                        Sell
-                    </button>
+                    <div className="flex flex-row">
+                        {itemActions.map((action) => {
+                            const buttonStyles = classd`
+                            border-2 hover:border-gray-500 bg-transparent py-1 px-2 rounded-md  
+                            ${[
+                                action.size === "primary" &&
+                                    "w-auto flex-grow border-purple-500 text-purple-700 hover:text-gray-700",
+                                action.size === "secondary" &&
+                                    "w-1/4 flex-shrink border-gray-500 text-gray-700 hover:text-gray-500",
+                            ]}`;
+
+                            return (
+                                <button
+                                    type="button"
+                                    className={buttonStyles}
+                                    onClick={() =>
+                                        dispatch({
+                                            type: action.action,
+                                            payload: { id: item.id },
+                                        })
+                                    }
+                                >
+                                    {action.text}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </li>
             ))}
         </ul>
     );
 
-    const handleMessage = (type, message) => {
-        dispatch({ type: "cueMessage", payload: { type, message } });
+    const handleMessage = (type, text) => {
+        dispatch({ type: "cueMessage", payload: { type, text } });
     };
     useEffect(() => {
         handleMessage("success", "Welcome to the game!");
@@ -293,7 +386,7 @@ function App() {
     const displayMessages = () => (
         <ul>
             {state.messages.map((message) => (
-                <li key={message.id} className="flex justify-around my-2">
+                <li key={message.id} className="flex justify-around mr-2 my-2">
                     <span className="relative inline-flex rounded-md shadow-sm">
                         <div className="inline-flex items-center px-4 py-2 border border-gray-400 text-base leading-6 font-medium rounded-md text-gray-800 bg-white">
                             {message.text}
@@ -327,11 +420,14 @@ function App() {
                     Iron: {state.warehouse.materials.iron}
                 </div>
                 <div className="text-2xl">
-                    Items ({state.warehouse.materials.crafted.length}):{" "}
-                    {renderItems()}
+                    Inventory ({state.warehouse.materials.crafted.length}):{" "}
+                    {renderItems(
+                        state.warehouse.materials.crafted,
+                        state.actions.materials
+                    )}
                 </div>
             </div>
-            <div className="controls grid gap-4 h-64">
+            <div className="controls grid gap-4 h-full">
                 <button
                     className="border-gray-900 border-2 m-2"
                     type="button"
@@ -351,9 +447,13 @@ function App() {
                 >
                     Reset the Game
                 </button>
+                <div className="text-2xl">
+                    Tooling ({state.player.tooling.length}):{" "}
+                    {renderItems(state.player.tooling, state.actions.tooling)}
+                </div>
             </div>
             <div
-                className="messages overflow-y-scroll"
+                className="messages overflow-y-scroll overflow-x-visible"
                 style={{ scrollbarWidth: "none", maxHeight: "94vh" }}
             >
                 {displayMessages()}
