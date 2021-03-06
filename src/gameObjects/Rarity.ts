@@ -51,6 +51,6 @@ export const rarities: Rarities = [
     max_prefixes: 4,
     min_suffixes: 2,
     num_suffixes: 4,
-    weight: 50,
+    weight: 30,
   },
 ];

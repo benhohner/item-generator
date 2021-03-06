@@ -24,17 +24,23 @@ export interface BaseItemProperty {
   range?: number;
 }
 
+/**
+ * Domain is a primary key for for type of entity
+ */
 export type BaseItemDomain =
   | "item"
   | "flask"
   | "crafted"
   | "delve"
   | "atlas"
+  | "currency"
+  | "skill_gem"
+  | "divination_card"
   | "misc"
   | "abyss_jewel"
   | "affliction_jewel"
-  | "map_device"
-  | "area";
+  | "map_device" // Map Fragment
+  | "area"; // Maps
 
 export interface BaseItemRequirement {
   level?: number;
@@ -59,4 +65,8 @@ export interface BaseItem {
     dds_file: string;
     id: string;
   };
+}
+
+export interface BaseItems {
+  [ItemID: string]: BaseItem;
 }

@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { Chance } from "chance";
 
 import { GLOBALS } from "./Globals";
+import { Item } from "./Item";
 import { rarities } from "./Rarity";
 
 // Initialize Chance
@@ -25,41 +26,48 @@ export function isUpgraded() {
   return chance.bool({ likelihood: GLOBALS.ITEM.UPGRADE_CHANCE });
 }
 
-export function generateItems() {
-  if (isUpgraded()) {
-    const rarity = pickWeighted(rarities.slice(1)); // Not normal rarity
-  } else {
-    const rarity = pickWeighted(rarities[0]); // normal rarity
-  }
-
-  if (isUpgraded()) {
-    return [
-      {
-        id: nanoid(),
-        name: `Magic Sword ${nanoid(4)}`,
-        value: GLOBALS.ITEM.MATERIALS_VALUE(),
-      },
-    ];
-  }
-  return [
-    {
-      id: nanoid(),
-      name: `Sword ${nanoid(4)}`,
-      value: GLOBALS.ITEM.MATERIALS_VALUE(),
-    },
-  ];
+function getItemID(itemPrototype): string {
+  return `Item/IDNotImplemented/${itemPrototype.uuid}`;
 }
 
-// Decide whether to enchant item (16% of time), if yes:
-// Roll for rarity
-// Pick a base item within your item level and rarity
-// Roll for number of mods
-// Pick mods
+// Rarity roll to determine rarity
+// Base items including currency
+//  return
+// Magic items
+//  Generate base item
+//  record item domain
+//  pick a random number of prefix and suffix mods within item domain
+//  pick prefixes making sure there aren't two of same mod family
+//  pick ""
+//    roll mod stats
 
-// Generate item
-export interface Item {
-  name: string;
-  id: string;
-  uuid: string;
-  rarity: string;
+// TODO: Investigate implementing builder pattern
+export function generateItems(): Item[] {
+  let rarity;
+
+  // Generate normal items separately
+  // Decide whether to enchant item (16% of time), if yes:
+  if (isUpgraded()) {
+    // Roll for rarity
+    rarity = pickWeighted(rarities.slice(1)); // Not normal rarity
+  } else {
+    rarity = pickWeighted(rarities.slice(0, 1)); // normal rarity
+  }
+
+  // Pick a base item within your item level and rarity
+
+  // Roll for number of mods
+
+  // Pick mods
+
+  const itemPrototype = {
+    uuid: nanoid(),
+    rarity,
+    name: `${rarity.name} Sword ${nanoid(4)}`,
+    value: GLOBALS.ITEM.MATERIALS_VALUE(),
+  } as Partial<Item>;
+
+  itemPrototype.id = getItemID(itemPrototype);
+
+  return [itemPrototype as Item];
 }

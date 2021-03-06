@@ -6,6 +6,10 @@ export type ItemClasses = {
   [itemclassid in ItemClassID]: ItemClass;
 };
 
+/**
+ * Item Classes are used in item filters or for checking the item class restrictions of
+ * skill gems for example.
+ */
 export type ItemClassID =
   | "AbyssJewel"
   | "ActiveSkillGem"
