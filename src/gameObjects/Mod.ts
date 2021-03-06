@@ -24,12 +24,18 @@ export interface GrantedEffect {
 export interface Mod {
   adds_tags: Tag[];
   domain: string;
-  generation_type: string;
+  generation_type:
+    | "suffix"
+    | "prefix"
+    | "unique"
+    | "enchantment"
+    | "corrupted"
+    | "blight_tower"
+    | "tempest";
   generation_weights: GenerationWeight[];
-  grants_buff: {};
+  //grants_buff: {}; // Enable if buffs are wanted
   grants_effects: GrantedEffect[];
   group: string;
-  is_essence_only: boolean;
   name: string;
   required_level: number;
   spawn_weights: SpawnWeight[];

@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { classd } from "classd";
 
 import { GLOBALS } from "./gameObjects/Globals";
-import { generateItem } from "./gameObjects/ItemBuilder";
+import { generateItems } from "./gameObjects/ItemBuilder";
 
 // TODO: create utils for working with arrays of objects with ids
 
@@ -118,7 +118,7 @@ function initGameState(): IGameState {
 
 interface IMessage {
   text: string;
-  id: string;
+  uuid: string;
   type: "success" | "info" | "warn" | "error";
   color: string;
 }
@@ -130,7 +130,7 @@ function buildMessageObject(type, text): IMessage {
     warn: "orange",
     error: "red",
   };
-  return { text, id: nanoid(), type, color: colorMap[type] };
+  return { text, uuid: nanoid(), type, color: colorMap[type] };
 }
 
 const gameReducer = produce((draft: IGameState, action) => {
@@ -145,7 +145,7 @@ const gameReducer = produce((draft: IGameState, action) => {
         );
         draft.warehouse.materials.iron -= 1;
         draft.warehouse.materials.energy -= 5;
-        draft.warehouse.materials.crafted.push(generateItem());
+        draft.warehouse.materials.crafted.push(generateItems()[0]);
       } else {
         draft.messages.unshift(
           buildMessageObject("error", "You don't have enough materials")
@@ -154,7 +154,7 @@ const gameReducer = produce((draft: IGameState, action) => {
       return;
     case "sell": {
       const [foundItem] = draft.warehouse.materials.crafted.filter(
-        (item) => item.id === action.payload.id
+        (item) => item.uuid === action.payload.uuid
       );
 
       if (foundItem) {
@@ -164,7 +164,7 @@ const gameReducer = produce((draft: IGameState, action) => {
         draft.warehouse.space += 1;
         draft.warehouse.materials.energy += foundItem.value;
         draft.warehouse.materials.crafted = draft.warehouse.materials.crafted.filter(
-          (item) => item.id !== action.payload.id
+          (item) => item.uuid !== action.payload.uuid
         );
       } else {
         draft.messages.unshift(buildMessageObject("error", "Item not found"));
@@ -194,7 +194,7 @@ const gameReducer = produce((draft: IGameState, action) => {
       return;
     case "equip": {
       const [foundItem] = draft.warehouse.materials.crafted.filter(
-        (item) => item.id === action.payload.id
+        (item) => item.uuid === action.payload.uuid
       );
 
       if (
@@ -205,7 +205,7 @@ const gameReducer = produce((draft: IGameState, action) => {
         draft.player.tooling.push(foundItem);
         draft.warehouse.space += 1;
         draft.warehouse.materials.crafted = draft.warehouse.materials.crafted.filter(
-          (item) => item.id !== foundItem.id
+          (item) => item.uuid !== foundItem.uuid
         );
       } else {
         draft.messages.unshift(
@@ -219,7 +219,7 @@ const gameReducer = produce((draft: IGameState, action) => {
     }
     case "unequip": {
       const [foundItem] = draft.player.tooling.filter(
-        (item) => item.id === action.payload.id
+        (item) => item.uuid === action.payload.uuid
       );
 
       if (foundItem && draft.warehouse.space > 0) {
@@ -227,7 +227,7 @@ const gameReducer = produce((draft: IGameState, action) => {
           buildMessageObject("success", `Unequipped item`)
         );
         draft.player.tooling = draft.player.tooling.filter(
-          (item) => item.id !== foundItem.id
+          (item) => item.uuid !== foundItem.uuid
         );
         draft.warehouse.space -= 1;
         draft.warehouse.materials.crafted.push(foundItem);
@@ -280,7 +280,7 @@ function App() {
   const renderItems = (items, itemActions) => (
     <ul className="grid grid-flow-row-dense grid-cols-3 gap-4">
       {items.map((item) => (
-        <li key={item.id} className="text-lg shadow p-2">
+        <li key={item.uuid} className="text-lg shadow p-2">
           <div className="flex flex-row justify-between">
             <div className="text-medium">{item.name}</div>
             <div className="font-bold">${item.value}</div>
@@ -303,7 +303,7 @@ function App() {
                   onClick={() =>
                     dispatch({
                       type: action.action,
-                      payload: { id: item.id },
+                      payload: { uuid: item.uuid },
                     })
                   }
                 >
@@ -327,7 +327,7 @@ function App() {
   const displayMessages = () => (
     <ul>
       {state.messages.map((message) => (
-        <li key={message.id} className="flex justify-around mr-2 my-2">
+        <li key={message.uuid} className="flex justify-around mr-2 my-2">
           <span className="relative inline-flex rounded-md shadow-sm">
             <div className="inline-flex items-center px-4 py-2 border border-gray-400 text-base leading-6 font-medium rounded-md text-gray-800 bg-white">
               {message.text}
@@ -349,6 +349,15 @@ function App() {
       ))}
     </ul>
   );
+
+  const makeItem = () => {
+    const items = generateItems();
+    if (items.length > 0) {
+      handleMessage("info", items[0].name);
+    } else {
+      handleMessage("info", "No Item Generated");
+    }
+  };
 
   return (
     <div className="grid grid-cols-4 w-11/12 my-4 mx-auto font-sans">
@@ -381,6 +390,9 @@ function App() {
           Buy 5 Iron
         </button>
         <button type="button" onClick={() => dispatch({ type: "reset" })}>
+          Reset the Game
+        </button>
+        <button type="button" onClick={() => makeItem()}>
           Reset the Game
         </button>
         <div className="text-2xl">

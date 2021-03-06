@@ -1,6 +1,6 @@
 export let GLOBALS = {
   ITEM: {
-    UPGRADE_CHANCE: 0.16,
+    UPGRADE_CHANCE: 16,
     MATERIALS_VALUE: () => Math.floor(Math.random() * 12 + 1),
   },
   WAREHOUSE: {

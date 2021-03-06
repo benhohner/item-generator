@@ -26,11 +26,12 @@ export interface BaseItemProperty {
 
 export type BaseItemDomain =
   | "item"
-  | "undefined"
-  | "unknown4"
   | "flask"
-  | "abyss_jewel"
+  | "crafted"
+  | "delve"
+  | "atlas"
   | "misc"
+  | "abyss_jewel"
   | "affliction_jewel"
   | "map_device"
   | "area";
