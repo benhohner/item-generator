@@ -179,7 +179,7 @@ const gameReducer = produce((draft: IGameState, action) => {
       ) {
         draft.messages.unshift(
           buildMessageObject(
-            "success",
+            "info",
             `Bought ${action.payload} iron for ${action.payload} energy`
           )
         );
@@ -278,11 +278,19 @@ function App() {
   }, [state.messages]);
 
   const renderItems = (items, itemActions) => (
-    <ul className="grid grid-flow-row-dense grid-cols-3 gap-4">
+    <ul className="grid grid-flow-row-dense grid-cols-2 gap-4">
       {items.map((item) => (
         <li key={item.uuid} className="text-lg shadow p-2">
           <div className="flex flex-row justify-between">
-            <div className="text-medium">{item.name}</div>
+            <div
+              className={classd`font-bold ${{
+                "text-green-600": item.rarity.id === "enchanted",
+                "text-blue-600": item.rarity.id === "maged",
+                "text-red-500": item.rarity.id === "legendary",
+              }}`}
+            >
+              {item.name}
+            </div>
             <div className="font-bold">${item.value}</div>
           </div>
           <div className="flex flex-row">

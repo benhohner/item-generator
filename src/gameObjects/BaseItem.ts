@@ -1,5 +1,7 @@
 import { ItemClassID } from "./ItemClass";
 import { Tag } from "./Tag";
+import { data } from "./data/base_items";
+export const baseItems: BaseItems = data as BaseItems;
 
 export interface BaseItemProperty {
   armour?: number;
@@ -27,15 +29,19 @@ export interface BaseItemProperty {
 /**
  * Domain is a primary key for for type of entity
  */
+export type DomainNormalOnly = "crafted" | "delve" | "atlas";
+export type DomainWithRarity = "item" | "flask" | "abyss_jewel";
 export type BaseItemDomain =
   | "item"
   | "flask"
-  | "crafted"
-  | "delve"
-  | "atlas"
-  | "currency"
-  | "skill_gem"
-  | "divination_card"
+  // | "crafted"
+  // | "delve"
+  // | "atlas"
+  // | "currency"
+  // | "skill_gem"
+  // | "divination_card"
+  | "undefined"
+  | "unknown4"
   | "misc"
   | "abyss_jewel"
   | "affliction_jewel"
@@ -49,7 +55,7 @@ export interface BaseItemRequirement {
   strength?: number;
 }
 
-export interface BaseItem {
+export interface BaseItem extends Object {
   domain: BaseItemDomain;
   drop_level: number;
   implicits: string[];
@@ -65,6 +71,7 @@ export interface BaseItem {
     dds_file: string;
     id: string;
   };
+  [BaseItemKey: string]: any;
 }
 
 export interface BaseItems {
