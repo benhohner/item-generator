@@ -1,9 +1,5 @@
 import { Tag } from "./Tag";
 
-import { data } from "./data/mods";
-
-export const mods: Mods = data as Mods;
-
 export interface GenerationWeight {
   tag: string;
   weight: number;

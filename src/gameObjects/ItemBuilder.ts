@@ -5,6 +5,7 @@ import { GLOBALS } from "./Globals";
 import { Item } from "./Item";
 import { rarities } from "./Rarity";
 import { baseItems } from "./BaseItem";
+import mods from "./data/mods.json";
 
 // Initialize Chance
 const chance = new Chance();
@@ -49,8 +50,8 @@ export function generateItems(): Item[] {
   let num_mods = 0;
   let num_prefixes = 0;
   let num_suffixes = 0;
-  // let prefixes = []; // comment out to allow build
-  // let suffixes = [];
+  let prefixes = [];
+  let suffixes = [];
 
   // Generate normal items separately
   // Decide whether to enchant item (16% of time), if yes:
@@ -58,6 +59,7 @@ export function generateItems(): Item[] {
     // Roll for rarity
     rarity = pickWeighted(rarities.slice(1)); // Not normal rarity
 
+    // TODO: Pick a base item within your item level and rarity
     // Get a base item that can be magic
     baseItem = chance.pickone(
       Object.values(baseItems).filter((i) =>
@@ -70,32 +72,72 @@ export function generateItems(): Item[] {
     num_mods = chance.integer({ min: rarity.min_mods, max: rarity.max_mods });
 
     // Randomly fill prefixes and suffixes
-    Array(num_mods).forEach(() => {
-      // flip a coin
-      if (chance.bool()) {
-        // heads add to prefixes if possible
-        num_prefixes < rarity.max_prefixes ? num_prefixes++ : num_suffixes++;
-      } else {
-        // tails add to suffixes if possible
-        num_suffixes < rarity.max_suffixes ? num_suffixes++ : num_prefixes++;
-      }
-    });
+    Array(num_mods)
+      .fill(0)
+      .forEach(() => {
+        // flip a coin
+        if (chance.bool()) {
+          // heads add to prefixes if possible
+          num_prefixes < rarity.max_prefixes ? num_prefixes++ : num_suffixes++;
+        } else {
+          // tails add to suffixes if possible
+          num_suffixes < rarity.max_suffixes ? num_suffixes++ : num_prefixes++;
+        }
+      });
+
+    // TODO: Fix bug when mods search returns no results
+    // Generate Prefixes
+    Array(num_prefixes)
+      .fill(0)
+      .forEach(() =>
+        prefixes.push(
+          chance.pickone(
+            Object.values(mods).filter((i) => {
+              return (
+                ["prefix"].includes(i.generation_type) &&
+                [baseItem.domain].includes(i.domain) &&
+                ![...prefixes, ...suffixes]
+                  .map((x) => x.group)
+                  .includes(i.group)
+              );
+            })
+          )
+        )
+      );
+
+    // Generate Suffixes
+    Array(num_suffixes)
+      .fill(0)
+      .forEach(() => {
+        suffixes.push(
+          chance.pickone(
+            Object.values(mods).filter((i) => {
+              return (
+                ["suffix"].includes(i.generation_type) &&
+                [baseItem.domain].includes(i.domain) &&
+                ![...suffixes, ...prefixes]
+                  .map((x) => x.group)
+                  .includes(i.group)
+              );
+            })
+          )
+        );
+      });
   } else {
     rarity = pickWeighted(rarities.slice(0, 1)); // normal rarity
     baseItem = chance.pickone(Object.values(baseItems));
   }
 
-  // Pick a base item within your item level and rarity
-
-  // Roll for number of mods
-
-  // Pick mods
-
   const itemPrototype = {
     uuid: nanoid(),
     rarity,
-    name: `${baseItem.name}`,
-    value: GLOBALS.ITEM.MATERIALS_VALUE(),
+    name: `${
+      prefixes.length > 0 ? prefixes.map((i) => ":" + i.name).join(" ") : ""
+    }${prefixes.length > 0 ? " " : ""}${baseItem.name}${
+      suffixes.length > 0 ? " " : ""
+    }${suffixes.length > 0 ? suffixes.map((i) => "/" + i.name).join(" ") : ""}`,
+    value:
+      GLOBALS.ITEM.MATERIALS_VALUE() * (1 + prefixes.length + suffixes.length),
   } as Partial<Item>;
 
   itemPrototype.id = getItemID(itemPrototype);
