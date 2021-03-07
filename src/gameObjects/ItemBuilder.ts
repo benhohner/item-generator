@@ -49,8 +49,8 @@ export function generateItems(): Item[] {
   let num_mods = 0;
   let num_prefixes = 0;
   let num_suffixes = 0;
-  let prefixes = [];
-  let suffixes = [];
+  // let prefixes = []; // comment out to allow build
+  // let suffixes = [];
 
   // Generate normal items separately
   // Decide whether to enchant item (16% of time), if yes:
