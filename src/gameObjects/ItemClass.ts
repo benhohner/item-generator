@@ -294,5 +294,3 @@ export const itemClasses: ItemClasses = {
     name: "Warstaves",
   },
 };
-
-console.log(Object.keys(itemClasses));

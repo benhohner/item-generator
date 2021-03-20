@@ -145,7 +145,7 @@ const gameReducer = produce((draft: IGameState, action) => {
         );
         draft.warehouse.materials.iron -= 1;
         draft.warehouse.materials.energy -= 5;
-        draft.warehouse.materials.crafted.push(generateItems()[0]);
+        draft.warehouse.materials.crafted.push(action.payload.item);
       } else {
         draft.messages.unshift(
           buildMessageObject("error", "You don't have enough materials")
@@ -358,13 +358,10 @@ function App() {
     </ul>
   );
 
-  const makeItem = () => {
-    const items = generateItems();
-    if (items.length > 0) {
-      handleMessage("info", items[0].name);
-    } else {
-      handleMessage("info", "No Item Generated");
-    }
+  const handleGenerate = () => {
+    const item = generateItems()[0];
+    console.log(item);
+    dispatch({ type: "craft", payload: { item } });
   };
 
   return (
@@ -385,9 +382,9 @@ function App() {
       </div>
       <div className="controls grid gap-4 h-full">
         <button
-          className="border-gray-900 border-2 m-2"
+          className="border-gray-400 border-2 m-2"
           type="button"
-          onClick={() => dispatch({ type: "craft" })}
+          onClick={() => handleGenerate()}
         >
           generate
         </button>
@@ -398,9 +395,6 @@ function App() {
           Buy 5 Iron
         </button>
         <button type="button" onClick={() => dispatch({ type: "reset" })}>
-          Reset the Game
-        </button>
-        <button type="button" onClick={() => makeItem()}>
           Reset the Game
         </button>
         <div className="text-2xl">

@@ -5,7 +5,7 @@ import { GLOBALS } from "./Globals";
 import { Item } from "./Item";
 import { rarities } from "./Rarity";
 import { baseItems } from "./BaseItem";
-import mods from "./data/mods.json";
+import MODS from "./data/mods.json";
 
 // Initialize Chance
 const chance = new Chance();
@@ -32,6 +32,20 @@ function getItemID(itemPrototype): string {
   return `Item/IDNotImplemented/${itemPrototype.uuid}`;
 }
 
+function getItemName(itemPrototype): string {
+  return `${
+    itemPrototype.mods.prefix.length > 0
+      ? itemPrototype.mods.prefix.map((i) => ":" + i.name).join(" ")
+      : ""
+  }${itemPrototype.mods.prefix.length > 0 ? " " : ""}${
+    itemPrototype.baseItem.name
+  }${itemPrototype.mods.suffix.length > 0 ? " " : ""}${
+    itemPrototype.mods.suffix.length > 0
+      ? itemPrototype.mods.suffix.map((i) => "/" + i.name).join(" ")
+      : ""
+  }`;
+}
+
 // Rarity roll to determine rarity
 // Base items including currency
 //  return
@@ -48,10 +62,11 @@ export function generateItems(): Item[] {
   let rarity;
   let baseItem;
   let num_mods = 0;
-  let num_prefixes = 0;
-  let num_suffixes = 0;
-  let prefixes = [];
-  let suffixes = [];
+
+  const mods = {
+    prefix: [],
+    suffix: [],
+  };
 
   // Generate normal items separately
   // Decide whether to enchant item (16% of time), if yes:
@@ -77,52 +92,34 @@ export function generateItems(): Item[] {
       .forEach(() => {
         // flip a coin
         if (chance.bool()) {
-          // heads add to prefixes if possible
-          num_prefixes < rarity.max_prefixes ? num_prefixes++ : num_suffixes++;
+          // heads add to prefix if possible
+          mods.prefix.length < rarity.max_prefixes
+            ? generate_mod("prefix")
+            : generate_mod("suffix");
         } else {
-          // tails add to suffixes if possible
-          num_suffixes < rarity.max_suffixes ? num_suffixes++ : num_prefixes++;
+          // tails add to suffix if possible
+          mods.suffix.length < rarity.max_suffixes
+            ? generate_mod("suffix")
+            : generate_mod("prefix");
         }
       });
 
-    // TODO: Fix bug when mods search returns no results
-    // Generate Prefixes
-    Array(num_prefixes)
-      .fill(0)
-      .forEach(() =>
-        prefixes.push(
-          chance.pickone(
-            Object.values(mods).filter((i) => {
-              return (
-                ["prefix"].includes(i.generation_type) &&
-                [baseItem.domain].includes(i.domain) &&
-                ![...prefixes, ...suffixes]
-                  .map((x) => x.group)
-                  .includes(i.group)
-              );
-            })
-          )
-        )
-      );
-
-    // Generate Suffixes
-    Array(num_suffixes)
-      .fill(0)
-      .forEach(() => {
-        suffixes.push(
-          chance.pickone(
-            Object.values(mods).filter((i) => {
-              return (
-                ["suffix"].includes(i.generation_type) &&
-                [baseItem.domain].includes(i.domain) &&
-                ![...suffixes, ...prefixes]
-                  .map((x) => x.group)
-                  .includes(i.group)
-              );
-            })
-          )
+    function generate_mod(mod_type: "prefix" | "suffix") {
+      const potential_mods = Object.values(MODS).filter((i) => {
+        return (
+          [mod_type as string].includes(i.generation_type) &&
+          [baseItem.domain].includes(i.domain) &&
+          ![...mods.prefix, ...mods.suffix]
+            .map((x) => x.group)
+            .includes(i.group)
         );
       });
+
+      // Only create a prefix if there are applicable mods available
+      if (potential_mods.length > 0) {
+        mods[mod_type].push(chance.pickone(potential_mods));
+      }
+    }
   } else {
     rarity = pickWeighted(rarities.slice(0, 1)); // normal rarity
     baseItem = chance.pickone(Object.values(baseItems));
@@ -131,15 +128,14 @@ export function generateItems(): Item[] {
   const itemPrototype = {
     uuid: nanoid(),
     rarity,
-    name: `${
-      prefixes.length > 0 ? prefixes.map((i) => ":" + i.name).join(" ") : ""
-    }${prefixes.length > 0 ? " " : ""}${baseItem.name}${
-      suffixes.length > 0 ? " " : ""
-    }${suffixes.length > 0 ? suffixes.map((i) => "/" + i.name).join(" ") : ""}`,
+    baseItem,
     value:
-      GLOBALS.ITEM.MATERIALS_VALUE() * (1 + prefixes.length + suffixes.length),
+      GLOBALS.ITEM.MATERIALS_VALUE() *
+      (1 + mods.prefix.length + mods.suffix.length),
+    mods,
   } as Partial<Item>;
 
+  itemPrototype.name = getItemName(itemPrototype);
   itemPrototype.id = getItemID(itemPrototype);
 
   return [itemPrototype as Item];
