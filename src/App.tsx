@@ -277,7 +277,7 @@ function App() {
     // };
   }, [state.messages]);
 
-  const renderItems = (items, itemActions) => (
+  const renderItemList = (items, itemActions) => (
     <ul className="grid grid-flow-row-dense grid-cols-2 gap-4">
       {items.map((item) => (
         <li key={item.uuid} className="text-lg shadow p-2">
@@ -377,7 +377,7 @@ function App() {
         <div className="text-2xl">Iron: {state.warehouse.materials.iron}</div>
         <div className="text-2xl">
           Inventory ({state.warehouse.materials.crafted.length}):{" "}
-          {renderItems(
+          {renderItemList(
             state.warehouse.materials.crafted,
             state.actions.materials
           )}
@@ -405,7 +405,7 @@ function App() {
         </button>
         <div className="text-2xl">
           Tooling ({state.player.tooling.length}):{" "}
-          {renderItems(state.player.tooling, state.actions.tooling)}
+          {renderItemList(state.player.tooling, state.actions.tooling)}
         </div>
       </div>
       <div
