@@ -1,4 +1,4 @@
-export const data = {
+{
   "AbberathsFuryStance": {
     "sell_price_types": [],
     "tags": [

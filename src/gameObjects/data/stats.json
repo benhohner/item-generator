@@ -1,4 +1,4 @@
-export const data = {
+{
   "%_chance_to_blind_on_critical_strike": {
     "alias": {},
     "is_aliased": false,

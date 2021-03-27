@@ -1,4 +1,4 @@
-export const data = {
+{
   "Metadata/Items/Amulet/AmuletAtlas1": {
     "domain": "item",
     "drop_level": 77,

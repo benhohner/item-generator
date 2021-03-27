@@ -1,4 +1,4 @@
-import { data } from "./base_items";
+import data from "./base_items.json";
 
 // // object of kv pairs
 // const z = new Set(

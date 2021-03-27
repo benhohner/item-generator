@@ -1,7 +1,7 @@
 import { ItemClassID } from "./ItemClass";
 import { Tag } from "./Tag";
-import { data } from "./data/base_items";
-export const baseItems: BaseItems = data as BaseItems;
+import BASE_ITEMS from "./data/base_items.json";
+export const baseItems: BaseItems = BASE_ITEMS as BaseItems;
 
 export interface BaseItemProperty {
   armour?: number;
