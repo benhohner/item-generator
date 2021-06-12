@@ -3,10 +3,10 @@ import { produce } from "immer";
 
 import { nanoid } from "nanoid";
 
-import { classd } from "classd";
-
 import { GLOBALS } from "./gameObjects/Globals";
 import { generateItems } from "./gameObjects/ItemBuilder";
+
+import { ItemList } from "./gameObjects/components/ItemList";
 
 // TODO: create utils for working with arrays of objects with ids
 
@@ -26,32 +26,6 @@ import { generateItems } from "./gameObjects/ItemBuilder";
 // warehousing
 
 // need to purchase/find raw materials
-
-// Messing around with plotly histograms: https://stackoverflow.com/questions/918736/random-number-generator-that-produces-a-power-law-distribution
-// var x = [];
-// let gen_num = () => {
-//     const distributionPower = 3.0;
-//     const uniformVariate = Math.random();
-//     const low = 0.0;
-//     const high = 1;
-//     return (
-//         ((high ** (distributionPower + 1) - low ** (distributionPower + 1)) *
-//             uniformVariate +
-//             low ** (distributionPower + 1)) **
-//         (1 / (distributionPower + 1))
-//     );
-// };
-
-// for (var i = 0; i < 100000; i++) {
-//     x[i] = gen_num();
-// }
-
-// var trace = {
-//     x: x,
-//     type: "histogram",
-// };
-// var data = [trace];
-// Plotly.newPlot("myDiv", data);
 
 interface IGameState {
   actions: {
@@ -106,16 +80,6 @@ function initGameState(): IGameState {
   } as IGameState;
 }
 
-// depends on if need to have ordered or random access more frequently
-// let a = {
-//     type: "item",
-//     shape: "array",
-//     pk: "id",
-//     data: { "a": { id: "a", name: "donkey" }, b: },
-//     order: ["a", "b", "c"],
-//     fetch:
-// };
-
 interface IMessage {
   text: string;
   uuid: string;
@@ -163,9 +127,10 @@ const gameReducer = produce((draft: IGameState, action) => {
         );
         draft.warehouse.space += 1;
         draft.warehouse.materials.energy += foundItem.value;
-        draft.warehouse.materials.crafted = draft.warehouse.materials.crafted.filter(
-          (item) => item.uuid !== action.payload.uuid
-        );
+        draft.warehouse.materials.crafted =
+          draft.warehouse.materials.crafted.filter(
+            (item) => item.uuid !== action.payload.uuid
+          );
       } else {
         draft.messages.unshift(buildMessageObject("error", "Item not found"));
       }
@@ -204,9 +169,10 @@ const gameReducer = produce((draft: IGameState, action) => {
         draft.messages.unshift(buildMessageObject("success", `Equipped item`));
         draft.player.tooling.push(foundItem);
         draft.warehouse.space += 1;
-        draft.warehouse.materials.crafted = draft.warehouse.materials.crafted.filter(
-          (item) => item.uuid !== foundItem.uuid
-        );
+        draft.warehouse.materials.crafted =
+          draft.warehouse.materials.crafted.filter(
+            (item) => item.uuid !== foundItem.uuid
+          );
       } else {
         draft.messages.unshift(
           buildMessageObject(
@@ -263,67 +229,7 @@ function App() {
       clearInterval(clearTimerRef.current);
       clearTimerRef.current = null;
     }
-
-    // return () => {
-    //     console.log("unmounted");
-    //     if (clearTimerRef.current) {
-    //         console.log(
-    //             "removed timeout on unmount",
-    //             clearTimerRef.current
-    //         );
-    //         clearInterval(clearTimerRef.current);
-    //         clearTimerRef.current = null;
-    //     }
-    // };
   }, [state.messages]);
-
-  const renderItemList = (items, itemActions) => (
-    <ul className="grid grid-flow-row-dense grid-cols-2 gap-4">
-      {items.map((item) => (
-        <li key={item.uuid} className="text-lg shadow p-2">
-          <div className="flex flex-row justify-between">
-            <div
-              className={classd`font-bold ${{
-                "text-green-600": item.rarity.id === "enchanted",
-                "text-blue-600": item.rarity.id === "maged",
-                "text-red-500": item.rarity.id === "legendary",
-              }}`}
-            >
-              {item.name}
-            </div>
-            <div className="font-bold">${item.value}</div>
-          </div>
-          <div className="flex flex-row">
-            {itemActions.map((action) => {
-              const buttonStyles = classd`
-                            border-2 hover:border-gray-500 bg-transparent py-1 px-2 rounded-md  
-                            ${[
-                              action.size === "primary" &&
-                                "w-auto flex-grow border-purple-500 text-purple-700 hover:text-gray-700",
-                              action.size === "secondary" &&
-                                "w-1/4 flex-shrink border-gray-500 text-gray-700 hover:text-gray-500",
-                            ]}`;
-
-              return (
-                <button
-                  type="button"
-                  className={buttonStyles}
-                  onClick={() =>
-                    dispatch({
-                      type: action.action,
-                      payload: { uuid: item.uuid },
-                    })
-                  }
-                >
-                  {action.text}
-                </button>
-              );
-            })}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
 
   const handleMessage = (type, text) => {
     dispatch({ type: "cueMessage", payload: { type, text } });
@@ -374,10 +280,11 @@ function App() {
         <div className="text-2xl">Iron: {state.warehouse.materials.iron}</div>
         <div className="text-2xl">
           Inventory ({state.warehouse.materials.crafted.length}):{" "}
-          {renderItemList(
-            state.warehouse.materials.crafted,
-            state.actions.materials
-          )}
+          <ItemList
+            items={state.warehouse.materials.crafted}
+            itemActions={state.actions.materials}
+            dispatch={dispatch}
+          />
         </div>
       </div>
       <div className="controls grid gap-4 h-full">
@@ -399,7 +306,11 @@ function App() {
         </button>
         <div className="text-2xl">
           Tooling ({state.player.tooling.length}):{" "}
-          {renderItemList(state.player.tooling, state.actions.tooling)}
+          <ItemList
+            items={state.player.tooling}
+            itemActions={state.actions.tooling}
+            dispatch={dispatch}
+          />
         </div>
       </div>
       <div
